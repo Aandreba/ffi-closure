@@ -11,3 +11,6 @@ emit-llvm example:
 emit-asm example:
     rm -rf ./out
     cargo +nightly rustc --example {{example}} --release --all-features --target-dir ./out -- --emit=asm
+
+publish-test:
+    cargo publish --dry-run --allow-dirty

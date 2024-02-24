@@ -1,7 +1,18 @@
 [package]
 name = "ffi-closure"
-version = "0.1.0"
+description = "Send and recevie closures through FFI"
+repository = "https://github.com/Aandreba/ffi-closure"
+version = "1.0.0"
 edition = "2021"
+license = "MIT"
+keywords = ["ffi", "closure", "c", "abi"]
+categories = [
+    "data-structures",
+    "development-tools::ffi",
+    "external-ffi-bindings",
+    "no-std",
+    "rust-patterns",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
