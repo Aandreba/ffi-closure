@@ -26,3 +26,29 @@ fn import() {
         assert_eq!(sq(3), 9)
     }
 }
+
+/// ```compile_fail
+/// fn thread_safety_fail() {
+///     let mut res = 0;
+///     let mut closure1 = Closure::<dyn Send + FnMut()>::new(|| res += 1);
+///     let mut closure2 = Closure::<dyn Send + FnMut()>::new(|| res += 1);
+///
+///     std::thread::spawn(move || closure1.call(()));
+///     closure2.call(());
+///
+///     println!("{res}")
+/// }
+/// ```
+///
+/// ```compile_fail
+/// fn lifetime_safety_fail() {
+///     let res = AtomicU32::new(0);
+///
+///     let mut closure = Closure::<dyn Send + FnMut()>::new(|| {
+///         res.fetch_add(1, Ordering::AcqRel);
+///     });
+///
+///     std::thread::spawn(move || closure.call(()));
+/// }
+/// ````
+mod compile_fail {}

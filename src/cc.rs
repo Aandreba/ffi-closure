@@ -53,7 +53,7 @@ macro_rules! impl_ {
             }
         }
 
-        impl<$($arg,)* __F__: $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, __OUT__> IntoExtern<dyn $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, $ident> for __F__ {
+        impl<'a, $($arg,)* __F__: 'a + $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, __OUT__> IntoExtern<dyn 'a + $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, $ident> for __F__ {
             #[inline]
             fn into_extern(self: Box<Self>) -> Closure<dyn $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, $ident> {
                 unsafe extern $abi fn call<$($arg,)* __F__: FnMut($($arg,)*) -> __OUT__, __OUT__>($($arg: $arg,)* user_data: *mut c_void) -> __OUT__ {
@@ -103,6 +103,7 @@ macro_rules! cc {
                 #[cfg_attr(docsrs, doc(cfg($cfg)))]
             )?
             #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+            #[doc = concat!("The \"", $abi, "\" calling convention")]
             pub struct $ident;
 
             $(

@@ -13,6 +13,7 @@ use docfg::docfg;
 extern crate alloc;
 pub mod cc;
 
+/// A closure that can be sent through an FFI boundary.
 pub struct Closure<T: ?Sized, Cc: CallingConvention = C> {
     f: *const (),
     user_data: *mut c_void,
@@ -159,3 +160,30 @@ impl<T: ?Sized, Cc: CallingConvention> Drop for Closure<T, Cc> {
 
 unsafe impl<T: ?Sized + Send, Cc: CallingConvention> Send for Closure<T, Cc> {}
 unsafe impl<T: ?Sized + Sync, Cc: CallingConvention> Sync for Closure<T, Cc> {}
+
+/// ```compile_fail
+/// fn thread_safety_fail() {
+///     let mut res = 0;
+///     let mut closure1 = Closure::<dyn Send + FnMut()>::new(|| res += 1);
+///     let mut closure2 = Closure::<dyn Send + FnMut()>::new(|| res += 1);
+///
+///     std::thread::spawn(move || closure1.call(()));
+///     closure2.call(());
+///
+///     println!("{res}")
+/// }
+/// ```
+///
+/// ```compile_fail
+/// fn lifetime_safety_fail() {
+///     let res = AtomicU32::new(0);
+///
+///     let mut closure = Closure::<dyn Send + FnMut()>::new(|| {
+///         res.fetch_add(1, Ordering::AcqRel);
+///     });
+///
+///     std::thread::spawn(move || closure.call(()));
+/// }
+/// ```
+#[doc(hidden)]
+mod compile_fail {}

@@ -3,12 +3,12 @@
 ## Features
 
 - Simple to use API
+- Allows sending Rust functions & closures through FFI boundary
 - `no-std` compatible
-- Multiple calling conventions (defaults to C calling convention)
-- Allows sending Rust functions & closures through FFI boundry
-- Simplifies use of FFI-sent _closure-like_ functions
+- Supports multiple calling conventions (defaults to C calling convention)
+- Simplifies usage and interaction with FFI _closure-like_ functions
 - Closures can have destructors
-- Can specify closure's thread-safety level
+- Can specify closure's thread-safety level (None, `Send`, `Sync` or `Send + Sync`)
 
 ## Examples
 
