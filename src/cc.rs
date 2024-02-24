@@ -3,7 +3,6 @@
 use super::Closure;
 use alloc::boxed::Box;
 use core::ffi::c_void;
-use core::mem::transmute;
 #[allow(unused_imports)]
 use docfg::docfg;
 
@@ -13,16 +12,15 @@ pub trait CallingConvention: sealed::Sealed {
     unsafe fn destroy(f: Self::Destructor, user_data: *mut c_void);
 }
 
-pub trait AsExtern<Args, Cc: CallingConvention>: sealed::Sealed {
-    type Extern;
+pub trait AsExtern<Cc: CallingConvention>: sealed::Sealed {
+    type Args;
+    type Extern: Copy;
     type Output;
 
-    unsafe fn call_mut(f: *const (), args: Args, user_data: *mut c_void) -> Self::Output;
-    fn obfuscate(f: Self::Extern) -> *const ();
-    unsafe fn deobfuscate(f: *const ()) -> Self::Extern;
+    unsafe fn call_mut(f: Self::Extern, args: Self::Args, user_data: *mut c_void) -> Self::Output;
 }
 
-pub trait IntoExtern<Ext: ?Sized, Cc: CallingConvention> {
+pub trait IntoExtern<Ext: ?Sized + AsExtern<Cc>, Cc: CallingConvention> {
     fn into_extern(self: Box<Self>) -> Closure<Ext, Cc>;
 }
 
@@ -30,32 +28,20 @@ macro_rules! impl_ {
     (
         $abi:literal as $ident:ident => ($($arg:ident),*) $(+ $($trait:ident),+)?
     ) => {
-        impl<$($arg,)* __OUT__> AsExtern<($($arg,)*), $ident> for dyn $($($trait+)+)? FnMut($($arg,)*) -> __OUT__ {
+        impl<'a, $($arg,)* __OUT__> AsExtern<$ident> for dyn 'a + $($($trait+)+)? FnMut($($arg,)*) -> __OUT__ {
+            type Args = ($($arg,)*);
             type Extern = unsafe extern $abi fn($($arg,)* *mut c_void) -> __OUT__;
             type Output = __OUT__;
 
             #[inline(always)]
-            unsafe fn call_mut(f: *const (), ($($arg,)*): ($($arg,)*), user_data: *mut c_void) -> Self::Output {
-                transmute::<*const (), Self::Extern>(f)($($arg,)* user_data)
-            }
-
-            #[inline(always)]
-            fn obfuscate(f: Self::Extern) -> *const () {
-                #[cfg(feature = "nightly")]
-                return core::marker::FnPtr::addr(f);
-                #[cfg(not(feature = "nightly"))]
-                return f as *const ();
-            }
-
-            #[inline(always)]
-            unsafe fn deobfuscate(f: *const ()) -> Self::Extern {
-                return transmute::<*const (), Self::Extern>(f)
+            unsafe fn call_mut(f: Self::Extern, ($($arg,)*): ($($arg,)*), user_data: *mut c_void) -> Self::Output {
+                (f)($($arg,)* user_data)
             }
         }
 
         impl<'a, $($arg,)* __F__: 'a + $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, __OUT__> IntoExtern<dyn 'a + $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, $ident> for __F__ {
             #[inline]
-            fn into_extern(self: Box<Self>) -> Closure<dyn $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, $ident> {
+            fn into_extern(self: Box<Self>) -> Closure<dyn 'a + $($($trait+)+)? FnMut($($arg,)*) -> __OUT__, $ident> {
                 unsafe extern $abi fn call<$($arg,)* __F__: FnMut($($arg,)*) -> __OUT__, __OUT__>($($arg: $arg,)* user_data: *mut c_void) -> __OUT__ {
                     return (&mut *user_data.cast::<__F__>())($($arg),*)
                 }
@@ -159,10 +145,10 @@ macro_rules! seal {
         ),+ $(,)?
     ) => {
         $(
-            impl<$($arg,)* __OUT__> sealed::Sealed for dyn FnMut($($arg,)*) -> __OUT__ {}
-            impl<$($arg,)* __OUT__> sealed::Sealed for dyn Send + FnMut($($arg,)*) -> __OUT__ {}
-            impl<$($arg,)* __OUT__> sealed::Sealed for dyn Sync + FnMut($($arg,)*) -> __OUT__ {}
-            impl<$($arg,)* __OUT__> sealed::Sealed for dyn Send + Sync + FnMut($($arg,)*) -> __OUT__ {}
+            impl<'a, $($arg,)* __OUT__> sealed::Sealed for dyn 'a + FnMut($($arg,)*) -> __OUT__ {}
+            impl<'a, $($arg,)* __OUT__> sealed::Sealed for dyn 'a + Send + FnMut($($arg,)*) -> __OUT__ {}
+            impl<'a, $($arg,)* __OUT__> sealed::Sealed for dyn 'a + Sync + FnMut($($arg,)*) -> __OUT__ {}
+            impl<'a, $($arg,)* __OUT__> sealed::Sealed for dyn 'a + Send + Sync + FnMut($($arg,)*) -> __OUT__ {}
         )+
     };
 }

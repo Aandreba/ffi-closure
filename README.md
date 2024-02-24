@@ -18,6 +18,12 @@
 use ffi_closure::Closure;
 use std::ffi::c_void;
 
+# mod sys {
+#     use core::ffi::c_void;
+#     #[no_mangle]
+#     unsafe extern "C" fn some_lib_fn(f: unsafe extern "C" fn(i8, *mut c_void), user_data: *mut c_void) { f(-1, user_data) }
+# }
+
 extern "C" {
     fn some_lib_fn(f: unsafe extern "C" fn(i8, *mut c_void), user_data: *mut c_void);
 }
@@ -34,21 +40,27 @@ pub fn main() {
 
 ```
 
-**Exported closure w/ win64 calling convention**
+**Exported closure w/ system calling convention**
 
 ```rust
-use ffi_closure::{Closure, cc::Win64};
+use ffi_closure::{Closure, cc::System};
 use std::ffi::c_void;
 
+# mod sys {
+#     use core::ffi::c_void;
+#     #[no_mangle]
+#     unsafe extern "C" fn some_lib_fn(f: unsafe extern "C" fn(i8, *mut c_void), user_data: *mut c_void) { f(-1, user_data) }
+# }
+
 extern "C" {
-    fn some_lib_fn(f: unsafe extern "win64" fn(i8, *mut c_void), user_data: *mut c_void);
+    fn some_lib_fn(f: unsafe extern "system" fn(i8, *mut c_void), user_data: *mut c_void);
 }
 
 pub fn main() {
     let weight = std::env::args().len() as i8;
-    let closure = Closure::<dyn FnMut(i8), Win64>::new(move |x| println!("{}", x * weight));
+    let closure = Closure::<dyn FnMut(i8), System>::new(move |x| println!("{}", x * weight));
 
-    let (f, user_data): (unsafe extern "win64" fn(i8, *mut c_void), *mut c_void) = closure.as_extern_parts();
+    let (f, user_data): (unsafe extern "system" fn(i8, *mut c_void), *mut c_void) = closure.as_extern_parts();
     unsafe {
         some_lib_fn(f, user_data);
     }
@@ -92,7 +104,7 @@ pub unsafe extern "C" fn some_lib_fn(
         for i in 0..10 {
             f(i);
         }
-    })
+    });
 }
 
 ```
