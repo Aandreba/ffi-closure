@@ -20,13 +20,14 @@ pub struct Closure<T: ?Sized, Cc: CallingConvention = C> {
     _phtm: PhantomData<T>,
 }
 
-// Generic
 impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
+    /// Returns the user data of this `Closure`
     #[inline(always)]
     pub fn user_data(&self) -> *mut c_void {
         return self.user_data;
     }
 
+    /// Returns `true` if this closure has a destructor, `false` otherwise
     #[inline(always)]
     pub fn has_destructor(&self) -> bool {
         return self.destructor.is_some();
@@ -34,11 +35,33 @@ impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
 }
 
 impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
+    /// Creates a new `Closure` from a Rust closure.
+    ///
+    /// ## Example
+    /// ```
+    /// # use ffi_closure::Closure;
+    /// # use core::ffi::c_void;
+    /// let mut square = Closure::<dyn FnMut(u32) -> u32>::new(|x| x * x);
+    /// assert_eq!(square.call((3,)), 9);
+    /// ```
     #[inline]
     pub fn new<F: IntoExtern<T, Cc>>(f: F) -> Self {
         return Box::new(f).into_extern();
     }
 
+    /// Creates a new `Closure` from an external function pointer and user data.
+    ///
+    /// ## Example
+    /// ```
+    /// # use ffi_closure::Closure;
+    /// # use core::ffi::c_void;
+    /// unsafe extern "C" fn square(x: u32, _: *mut c_void) -> u32 {
+    ///     return x * x
+    /// }
+    ///
+    /// let mut square = unsafe { Closure::<dyn FnMut(u32) -> u32>::from_extern(square, core::ptr::null_mut(), None) };
+    /// assert_eq!(square.call((3,)), 9);
+    /// ```
     #[inline]
     pub unsafe fn from_extern<Args>(
         f: T::Extern,
@@ -56,6 +79,7 @@ impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
         };
     }
 
+    /// Returns the function pointer of this `Closure`
     #[inline(always)]
     pub fn fn_ptr<Args>(&self) -> T::Extern
     where
@@ -64,6 +88,16 @@ impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
         return unsafe { T::deobfuscate(self.f) };
     }
 
+    /// Returns the function pointer and user data of this `Closure`
+    ///
+    /// ## Example
+    /// ```
+    /// # use ffi_closure::Closure;
+    /// # use core::ffi::c_void;
+    /// let mut square = Closure::<dyn FnMut(u32) -> u32>::new(|x| x * x);
+    /// let (f, user_data): (unsafe extern "C" fn(u32, *mut c_void) -> u32, *mut c_void) = square.as_extern_parts();
+    /// unsafe { assert_eq!(f(3, user_data), 9) }
+    /// ```
     #[inline(always)]
     pub fn as_extern_parts<Args>(&self) -> (T::Extern, *mut c_void)
     where
@@ -72,6 +106,15 @@ impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
         return (self.fn_ptr(), self.user_data);
     }
 
+    /// Calls the `Closure`'s function pointer with the provided arguments and it's user data
+    ///
+    /// ## Example
+    /// ```
+    /// # use ffi_closure::Closure;
+    /// # use core::ffi::c_void;
+    /// let mut square = Closure::<dyn FnMut(u32) -> u32>::new(|x| x * x);
+    /// assert_eq!(square.call((3,)), 9);
+    /// ```
     #[inline(always)]
     pub fn call<Args>(&mut self, args: Args) -> T::Output
     where
@@ -82,7 +125,7 @@ impl<T: ?Sized, Cc: CallingConvention> Closure<T, Cc> {
 }
 
 #[docfg(feature = "nightly")]
-impl<T: ?Sized, Args: std::marker::Tuple, Cc: CallingConvention> FnOnce<Args> for Closure<T, Cc>
+impl<T: ?Sized, Args: core::marker::Tuple, Cc: CallingConvention> FnOnce<Args> for Closure<T, Cc>
 where
     T: AsExtern<Args, Cc>,
 {
@@ -95,7 +138,7 @@ where
 }
 
 #[docfg(feature = "nightly")]
-impl<T: ?Sized, Args: std::marker::Tuple, Cc: CallingConvention> FnMut<Args> for Closure<T, Cc>
+impl<T: ?Sized, Args: core::marker::Tuple, Cc: CallingConvention> FnMut<Args> for Closure<T, Cc>
 where
     T: AsExtern<Args, Cc>,
 {

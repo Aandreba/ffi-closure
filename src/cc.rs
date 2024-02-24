@@ -13,7 +13,7 @@ pub trait CallingConvention: sealed::Sealed {
     unsafe fn destroy(f: Self::Destructor, user_data: *mut c_void);
 }
 
-pub trait AsExtern<Args, Cc: CallingConvention> {
+pub trait AsExtern<Args, Cc: CallingConvention>: sealed::Sealed {
     type Extern;
     type Output;
 
@@ -42,7 +42,7 @@ macro_rules! impl_ {
             #[inline(always)]
             fn obfuscate(f: Self::Extern) -> *const () {
                 #[cfg(feature = "nightly")]
-                return std::marker::FnPtr::addr(f);
+                return core::marker::FnPtr::addr(f);
                 #[cfg(not(feature = "nightly"))]
                 return f as *const ();
             }
@@ -151,6 +151,21 @@ macro_rules! cc {
     };
 }
 
+macro_rules! seal {
+    (
+        $(
+            ($($arg:ident),*)
+        ),+ $(,)?
+    ) => {
+        $(
+            impl<$($arg,)* __OUT__> sealed::Sealed for dyn FnMut($($arg,)*) -> __OUT__ {}
+            impl<$($arg,)* __OUT__> sealed::Sealed for dyn Send + FnMut($($arg,)*) -> __OUT__ {}
+            impl<$($arg,)* __OUT__> sealed::Sealed for dyn Sync + FnMut($($arg,)*) -> __OUT__ {}
+            impl<$($arg,)* __OUT__> sealed::Sealed for dyn Send + Sync + FnMut($($arg,)*) -> __OUT__ {}
+        )+
+    };
+}
+
 // https://doc.rust-lang.org/nomicon/ffi.html#foreign-calling-conventions
 cc! {
     #[cfg(any(target_arch = "x86"))]
@@ -169,6 +184,24 @@ cc! {
     "win64" as Win64,
     #[cfg(any(target_arch = "x86_64"))]
     "sysv64" as Sysv64
+}
+
+seal! {
+    (),
+    (A),
+    (A, B),
+    (A, B, C_),
+    (A, B, C_, D),
+    (A, B, C_, D, E),
+    (A, B, C_, D, E, F),
+    (A, B, C_, D, E, F, G),
+    (A, B, C_, D, E, F, G, H),
+    (A, B, C_, D, E, F, G, H, I),
+    (A, B, C_, D, E, F, G, H, I, J),
+    (A, B, C_, D, E, F, G, H, I, J, K),
+    (A, B, C_, D, E, F, G, H, I, J, K, L),
+    (A, B, C_, D, E, F, G, H, I, J, K, L, M),
+    (A, B, C_, D, E, F, G, H, I, J, K, L, M, N),
 }
 
 mod sealed {
