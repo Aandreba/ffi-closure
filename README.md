@@ -2,7 +2,7 @@
 
 [![Crates.io Version](https://img.shields.io/crates/v/ffi-closure)
 ](https://crates.io/crates/ffi-closure)
-[![docs.rs](https://img.shields.io/docsrs/ffi-closure)](https://docs.rs/ffi-closure/latest/ffi-closure/)
+[![docs.rs](https://img.shields.io/docsrs/ffi-closure)](https://docs.rs/ffi-closure/)
 
 ## Features
 
