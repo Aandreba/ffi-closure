@@ -17,7 +17,6 @@
 ```rust
 use ffi_closure::Closure;
 use std::ffi::c_void;
-
 # mod sys {
 #     use core::ffi::c_void;
 #     #[no_mangle]
@@ -45,7 +44,6 @@ pub fn main() {
 ```rust
 use ffi_closure::{Closure, cc::System};
 use std::ffi::c_void;
-
 # mod sys {
 #     use core::ffi::c_void;
 #     #[no_mangle]
