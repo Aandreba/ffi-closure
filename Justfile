@@ -1,8 +1,8 @@
 doc:
     cargo +nightly rustdoc --all-features --open -- --cfg docsrs
 
-test:
-    cargo +nightly test --all-features
+test *ARGS:
+    cargo +nightly test --all-features {{ARGS}}
 
 emit-llvm example:
     rm -rf ./out
