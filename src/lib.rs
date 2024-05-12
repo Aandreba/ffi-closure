@@ -8,7 +8,7 @@
 
 use alloc::boxed::Box;
 use cc::{AsExtern, CallingConvention, IntoExtern, C};
-use core::{ffi::c_void, marker::PhantomData};
+use core::{ffi::c_void, marker::PhantomData, mem::ManuallyDrop};
 use docfg::docfg;
 
 extern crate alloc;
@@ -64,6 +64,13 @@ impl<T: ?Sized + AsExtern<Cc>, Cc: CallingConvention> Closure<T, Cc> {
             destructor,
             _phtm: PhantomData,
         };
+    }
+
+    /// Returns the parts that form the closure, without droping it.
+    /// Caller is responsibnle for correct deinitialization of the extracted closure.
+    pub fn into_parts(self) -> (*mut c_void, T::Extern, Option<Cc::Destructor>) {
+        let this = ManuallyDrop::new(self);
+        return (this.user_data, this.f, this.destructor);
     }
 
     /// Returns `true` if this closure has a destructor, `false` otherwise

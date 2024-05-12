@@ -7,7 +7,7 @@ use core::ffi::c_void;
 use docfg::docfg;
 
 pub trait CallingConvention: sealed::Sealed {
-    type Destructor;
+    type Destructor: Copy;
 
     unsafe fn destroy(f: Self::Destructor, user_data: *mut c_void);
 }

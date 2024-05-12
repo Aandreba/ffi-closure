@@ -2,7 +2,7 @@
 name = "ffi-closure"
 description = "Send and recevie closures through FFI"
 repository = "https://github.com/Aandreba/ffi-closure"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 license = "MIT"
 keywords = ["ffi", "closure", "c", "abi"]
